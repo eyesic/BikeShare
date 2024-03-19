@@ -14,6 +14,8 @@ library(ggplot2)
 
 Importing datasets
 ```{r}
+#day is a more comprehensive data set and can be used more inclusively vs hourly.
+
 day <- read_csv("day.csv", show_col_types = FALSE)
 
 #rename some variables
@@ -62,5 +64,14 @@ average_rentals_by_weather_2012 <- day_2012 %>%
 
 print(average_rentals_by_weather_2012)
 
-```
+ggplot(average_rentals_by_weather_2012, aes(x = weather_situation, y = average_rentals)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Weather Situation", y = "Average Bike Rentals", 
+       title = "Average Bike Rentals by Weather Situation in 2012")
 
+ggplot(day_2012, aes(x = date, y = count, color = weather_situation)) +
+  geom_line() +
+  labs(x = "Date", y = "Number of Bike Rentals",
+       title = "Daily Bike Rentals Over Time by Weather Situation in 2012")
+```
+Upon analyzing the data in 2012, there are two low points that can be identified around June and October/November. When the bike shares were at all time lows at this point when the weather was bad, we searched for a reason for this. According to the top 5 weather incidents of 2012, there was hurricane Sandy in late October and also the June 29th Derecho where weather temperatures were at an all time high. The data points line up with the weather occurences and explain how weather can impact the number of bike rentals.
