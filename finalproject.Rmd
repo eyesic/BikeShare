@@ -8,17 +8,59 @@ date: "2024-03-18"
 knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 library(tidyverse)
-
+library(dplyr)
+library(ggplot2)
 ```
 
-Importing two datasets
+Importing datasets
 ```{r}
-hour <- read_csv("hour.csv", show_col_types = FALSE)
 day <- read_csv("day.csv", show_col_types = FALSE)
+
+#rename some variables
+day <- rename(day, date = dteday, year = yr, month = mnth, weather_situation = weathersit, count = cnt, serial = instant)
+
+day
 ```
+This code chunk answers Further Researched Question #1:
+
+Did any major weather events cause changes in the average bike rentals, and was it something that may affect our data/predictions.
 
 ```{r}
-# only using 
-str(day)
+#Changing levels for clarity
+day$weather_situation <- factor(day$weather_situation, levels = c(1, 2, 3), labels = c("good", "okay", "bad"))
+
+#Find average based on weather situation first
+average_rentals_by_weather <- day %>%
+  group_by(weather_situation) %>%
+  summarize(average_rentals = mean(count, na.rm = TRUE))
+
+print(average_rentals_by_weather)
+
+ggplot(average_rentals_by_weather, aes(x = weather_situation, y = average_rentals)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Weather Situation", y = "Average Bike Rentals", 
+       title = "Average Bike Rentals by Weather Situation")
+
+#Plotting bike rentals over time
+ggplot(day, aes(x = date, y = count, color = weather_situation)) +
+  geom_line() +
+  labs(x = "Date", y = "Number of Bike Rentals",
+       title = "Daily Bike Rentals Over Time by Weather Situation")
+```
+
+Now analyze the year 2012 alone to see if there were specific weather occurences
+```{r}
+#get the year 2012 values alone
+day_2012 <- day %>% 
+  filter(year(date) == 2012)
+
+day$weather_situation <- factor(day$weather_situation, levels = c(1, 2, 3), labels = c("good", "okay", "bad"))
+
+average_rentals_by_weather_2012 <- day_2012 %>%
+  group_by(weather_situation) %>%
+  summarize(average_rentals = mean(count, na.rm = TRUE))
+
+print(average_rentals_by_weather_2012)
+
 ```
 
