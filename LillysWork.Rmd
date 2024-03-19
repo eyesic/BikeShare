@@ -1,0 +1,59 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-03-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(readr)
+library(tidyverse)
+hour <-read_csv("/Users/lillyrepak/Desktop/STOR 320/hour.csv")
+day <-read_csv("/Users/lillyrepak/Desktop/STOR 320/day.csv")
+```
+
+```{r}
+new_day <- day %>%
+  mutate(true_weekday = weekday %in% c(1,2,3,4,5)) 
+new_season_labels <- c("1" = "Winter", "2" = "Spring", "3" = "Summer", "4" = "Fall")
+ggplot(new_day) +
+geom_boxplot(mapping=aes(x = true_weekday, y = cnt, fill = season), show.legend = F) +
+  facet_grid(~ season, labeller = labeller(season = new_season_labels)) +
+  xlab("Was It a Weekday?") +
+  ylab("Count") 
+```
+
+```{r}
+new_workday_labels <- c("0" = "Not A Workday", "1" = "A Workday") 
+ggplot(day) +
+  geom_point(mapping=aes(x= cnt, y = temp), color = "lightBlue") +
+  facet_wrap(~workingday, labeller = labeller(workingday = new_workday_labels)) +
+  geom_smooth(mapping=aes(x= cnt, y = temp), method = "lm") +
+  xlab("Count") +
+  ylab("Temperature") 
+```
+
+
