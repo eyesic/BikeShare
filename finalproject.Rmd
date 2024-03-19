@@ -74,4 +74,83 @@ ggplot(day_2012, aes(x = date, y = count, color = weather_situation)) +
   labs(x = "Date", y = "Number of Bike Rentals",
        title = "Daily Bike Rentals Over Time by Weather Situation in 2012")
 ```
+
 Upon analyzing the data in 2012, there are two low points that can be identified around June and October/November. When the bike shares were at all time lows at this point when the weather was bad, we searched for a reason for this. According to the top 5 weather incidents of 2012, there was hurricane Sandy in late October and also the June 29th Derecho where weather temperatures were at an all time high. The data points line up with the weather occurences and explain how weather can impact the number of bike rentals.
+
+
+This code chunk answers Further Researched Question #2:
+
+How was attendance of the National Cherry Blossom Festival in D.C. and did the yearly event cause a spike in casual rentals.
+
+Importing cherry blossoms dataset
+```{r}
+cherry_blossoms <- read_csv("cherry-blossoms_filtered_2011-2013.csv", show_col_types = FALSE)
+
+#rename some variables
+cherry_blossoms <- rename(cherry_blossoms, peak_bloom = "Yoshino Peak Bloom Date", festival_start_date = "Festival Start Date", festival_duration = "Festival Duration")
+
+#selecting festival start date and duration 
+cherry_blossoms <- select(cherry_blossoms, Year, festival_start_date, festival_duration)
+
+#reformating festival start date and the end date
+cherry_blossoms <- cherry_blossoms %>%
+  mutate(
+    Year = as.numeric(Year),
+    festival_start_date = as.Date(festival_start_date - 1, origin=paste0(Year - 1, "-12-31")),
+    festival_end_date = festival_start_date + as.numeric(festival_duration) - 1
+  )
+
+cherry_blossoms
+
+```
+
+```{r}
+day <- day %>%
+  mutate(Year = year(date))
+
+#Perform an inner_join to merge day and cherry_blossoms data
+merged_data <- inner_join(cherry_blossoms, day, by = "Year")
+
+#Filter date
+festival_data <- merged_data %>%
+  filter(date >= festival_start_date & date <= festival_end_date)
+
+#Select needed variables
+festival_bike_rentals <- festival_data %>%
+  select(festival_start_date, festival_end_date, date, count)
+
+#Summarize bike rentals by festival
+total_bike_rentals_by_festival <- festival_bike_rentals %>%
+  group_by(festival_start_date, festival_end_date) %>%
+  summarize(total_rentals = sum(count))
+
+total_bike_rentals_by_festival
+
+#calculates the mean bike rentals during festivals from 2011-2012
+average_rentals_during_festivals <- merged_data %>%
+  filter(date >= festival_start_date & date <= festival_end_date) %>%
+  summarise(average_rentals_during_festival = mean(count, na.rm = TRUE))
+
+average_rentals_during_festivals
+
+#creates an identifier for the festival periods
+cherry_blossoms <- cherry_blossoms %>%
+  mutate(festival_id = row_number())
+
+#merge with day dataset to exclude the periods of festival
+day_with_festival <- day %>%
+  left_join(cherry_blossoms, by = "Year") %>%
+  mutate(is_festival = date >= festival_start_date & date <= festival_end_date,
+         is_festival = ifelse(is.na(is_festival), FALSE, is_festival))
+
+#calculates the mean bike rentals excluding festival days from 2011-2012
+average_rentals_excluding_festival <- day_with_festival %>%
+  filter(!is_festival) %>%
+  summarise(average_rentals_excluding_festival = mean(count, na.rm = TRUE))
+
+average_rentals_excluding_festival
+
+```
+
+Upon analyzing the average rentals during festival and excluding festival in the years of 2011 and 2012, we calculated that there is an 8.42% change. This means that during cherry blossom festival duration there is an increased amount of bike rentals compared to normal times of the year. Another finding is that in 2012 there is way more total bike rentals compared to 2011 during the days of cherry blossom festival. This can be explained by looking into the weather situation which was investigated earlier. In March of 2012 the temperature was 10 degrees Celsius higher compared to previous years, so normally it would be in the 50s but in March of 2012 it was in the 70s reaching the 80s. This could mean that warmer weather may have explained the drastic increase in total bike rentals in 2012 compared to 2011.   
+
