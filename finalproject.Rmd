@@ -49,14 +49,37 @@ ggplot(day, aes(x = date, y = count, color = weather_situation)) +
   labs(x = "Date", y = "Number of Bike Rentals",
        title = "Daily Bike Rentals Over Time by Weather Situation")
 ```
+We look at the year 2011 
+
+```{r}
+#get the year 2011 values alone
+day_2011 <- day %>% 
+  filter(year(date) == 2011)
+
+average_rentals_by_weather_2011 <- day_2011 %>%
+  group_by(weather_situation) %>%
+  summarize(average_rentals = mean(count, na.rm = TRUE))
+
+print(average_rentals_by_weather_2011)
+
+ggplot(average_rentals_by_weather_2011, aes(x = weather_situation, y = average_rentals)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Weather Situation", y = "Average Bike Rentals", 
+       title = "Average Bike Rentals by Weather Situation in 2011")
+
+ggplot(day_2011, aes(x = date, y = count, color = weather_situation)) +
+  geom_line() +
+  labs(x = "Date", y = "Number of Bike Rentals",
+       title = "Daily Bike Rentals Over Time by Weather Situation in 2011")
+```
+Looking at the year 2011 we can match exact dates to weather occurrences. On January 26, there is an all time low for the 26-27th for count of bike rentals, this is related to the rush hour snowstorm that occurs. There are 506 rentals and 431 respectively. In the month of July there was a heat wave and had the hottest days which explains why it has the month with highest rentals. Then in August there were hurricanes which impacted the rentals even though the weather was okay. 
+
 
 Now analyze the year 2012 alone to see if there were specific weather occurences
 ```{r}
 #get the year 2012 values alone
-day_2012 <- day %>% 
+day_2012 <- day %>%
   filter(year(date) == 2012)
-
-day$weather_situation <- factor(day$weather_situation, levels = c(1, 2, 3), labels = c("good", "okay", "bad"))
 
 average_rentals_by_weather_2012 <- day_2012 %>%
   group_by(weather_situation) %>%
