@@ -73,6 +73,7 @@ ggplot(day_2011, aes(x = date, y = count, color = weather_situation)) +
   labs(x = "Date", y = "Number of Bike Rentals",
        title = "Daily Bike Rentals Over Time by Weather Situation in 2011")
 ```
+<<<<<<< HEAD
 Match specific dates
 
 ```{r}
@@ -142,6 +143,8 @@ print(p1)
 ```
 
 
+=======
+>>>>>>> main
 Looking at the year 2011 we can match exact dates to weather occurrences. On January 26, there is an all time low for the 26-27th for count of bike rentals, this is related to the rush hour snowstorm that occurs. There are 506 rentals and 431 respectively. In the month of July there was a heat wave and had the hottest days which explains why it has the month with highest rentals. Then in August there were hurricanes which impacted the rentals even though the weather was okay. 
 
 

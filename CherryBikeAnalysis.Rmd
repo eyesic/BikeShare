@@ -1,0 +1,46 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+```
+
+Initial Questions
+
+Question 3: Is there a relationship between weather conditions and the day bike was rented?
+
+Importing dataset
+```{r}
+#day is a more comprehensive data set and can be used more inclusively vs hourly.
+
+day <- read_csv("day.csv", show_col_types = FALSE)
+
+#rename some variables
+day <- rename(day, date = dteday, year = yr, month = mnth, weather_situation = weathersit, count = cnt, serial = instant)
+
+average_rentals_by_weather <- day %>%
+  group_by(weather_situation) %>%
+  summarize(average_rentals = mean(count, na.rm = TRUE))
+
+ggplot(average_rentals_by_weather, aes(x = weather_situation, y = average_rentals, fill = weather_situation)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Weather Situation", y = "Average Bike Rentals", title = "Average Bike Rentals by Weather Condition") +
+  theme_minimal()
+```
+
+
+Question 4: Is there a significant difference between school and summer months of bike rentals?
+```{r}
+summer_mean_rentals <- day %>%
+  filter(month %in% c(6, 7, 8)) %>%
+  summarize(summer_mean_rentals = mean(count, na.rm = TRUE))
+
+nonsummer_mean_rentals <- day %>%
+  filter(!(month %in% c(6, 7, 8))) %>%
+  summarize(nonsummer_mean_rentals = mean(count, na.rm = TRUE))
+
+summer_mean_rentals
+nonsummer_mean_rentals
+```
+

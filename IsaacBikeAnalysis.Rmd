@@ -1,0 +1,25 @@
+```{r}
+monthly_avg_rentals <- day %>%
+  group_by(month) %>%
+  summarize(average_rentals = mean(count, na.rm = TRUE))
+
+# Identify peak season (the month with the highest average rentals)
+peak_season <- monthly_avg_rentals %>%
+  filter(average_rentals == max(average_rentals))
+
+peak_season
+
+# Identify the least popular month (the month with the lowest average rentals)
+least_popular_month <- monthly_avg_rentals %>%
+  filter(average_rentals == min(average_rentals))
+
+least_popular_month
+
+#Plotting for visual representation
+ggplot(monthly_avg_rentals, aes(x = factor(month), y = average_rentals)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  scale_x_discrete(labels = c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')) +
+  labs(x = "Month", y = "Average Bike Rentals", title = "Average Bike Rentals by Month")
+```
+
+Upon analyzing the data, peak season is summer and the highest amount of rentals was 5772 on average. The lowest average amount was founded in the month of January with an average rental amount of 2176.
