@@ -10,6 +10,7 @@ library(readr)
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
+library(lubridate)
 ```
 
 Importing datasets
@@ -49,14 +50,106 @@ ggplot(day, aes(x = date, y = count, color = weather_situation)) +
   labs(x = "Date", y = "Number of Bike Rentals",
        title = "Daily Bike Rentals Over Time by Weather Situation")
 ```
+We look at the year 2011 
+
+```{r}
+#get the year 2011 values alone
+day_2011 <- day %>% 
+  filter(year(date) == 2011)
+
+average_rentals_by_weather_2011 <- day_2011 %>%
+  group_by(weather_situation) %>%
+  summarize(average_rentals = mean(count, na.rm = TRUE))
+
+print(average_rentals_by_weather_2011)
+
+ggplot(average_rentals_by_weather_2011, aes(x = weather_situation, y = average_rentals)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Weather Situation", y = "Average Bike Rentals", 
+       title = "Average Bike Rentals by Weather Situation in 2011")
+
+ggplot(day_2011, aes(x = date, y = count, color = weather_situation)) +
+  geom_line() +
+  labs(x = "Date", y = "Number of Bike Rentals",
+       title = "Daily Bike Rentals Over Time by Weather Situation in 2011")
+```
+Match specific dates
+
+```{r}
+# Create a data frame with specific dates and their corresponding weather event labels
+weather_events <- data.frame(
+  date = mdy(c("January 26, 2011", "September 4, 2011", "September 5, 2011", 
+               "September 6, 2011", "September 7, 2011", "September 8, 2011", 
+               "August 28, 2011", "April 27, 2011", "April 28, 2011")),
+  event = c("Snowstorm", "Tropical Storm Lee", "Tropical Storm Lee", 
+            "Tropical Storm Lee", "Tropical Storm Lee", "Tropical Storm Lee", 
+            "Hurricane Irene", "Tornado Outbreak", "Tornado Outbreak")
+)
+
+# Merge the weather events with day_2011 to get the counts for those dates
+highlighted_data <- left_join(day_2011, weather_events, by = "date")
+
+# Filter out the rows where label is NA to use in geom_point and geom_text
+filtered_highlighted_data <- highlighted_data %>% 
+  filter(!is.na(event))
+
+# Create the plot
+p <- ggplot(day_2011, aes(x = date, y = count)) +
+  geom_line(aes(color = weather_situation)) +  # Line for daily data
+  geom_point(data = filtered_highlighted_data, aes(x = date, y = count, color = event), size = 2) +  # Points for events
+  geom_text(data = filtered_highlighted_data, aes(x = date, y = count, label = event), 
+            hjust = "inward", vjust = "inward", size = 3, check_overlap = TRUE, nudge_y = 200) +  # Labels for events
+  labs(title = "Daily Bike Rentals and Weather Events in 2011", x = "Date", y = "Number of Bike Rentals") +
+  scale_color_manual(values = c("good" = "green", "okay" = "orange", "bad" = "red", 
+                                "Snowstorm" = "blue", "Tropical Storm Lee" = "purple", 
+                                "Hurricane Irene" = "black", "Tornado Outbreak" = "brown")) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 20),
+        axis.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Print the plot
+print(p)
+
+# Calculate the monthly averages for 2011
+monthly_avg_2011 <- day_2011 %>%
+  group_by(month = floor_date(date, "month")) %>%
+  summarize(average_count = mean(count))
+
+# Match the weather events with the first day of the month to join with monthly averages
+weather_events$month <- floor_date(weather_events$date, "month")
+
+# Now, join the monthly average data with the weather events to get the average count for each event
+weather_events_avg_2011 <- left_join(weather_events, monthly_avg_2011, by = "month")
+
+# Filter out rows with NA in average_count after joining
+weather_events_avg_2011 <- weather_events_avg_2011 %>% 
+  filter(!is.na(average_count))
+
+# Create the plot for 2011 with monthly averages and weather events
+p1 <- ggplot(monthly_avg_2011, aes(x = month, y = average_count)) +
+  geom_line(color = "blue", size = 1) +
+  geom_point(data = weather_events_avg_2011, aes(x = date, y = average_count, color = event), size = 2) +
+  scale_color_manual(values = c("Snowstorm" = "blue", "Tropical Storm Lee" = "purple",
+                                "Hurricane Irene" = "red", "Tornado Outbreak" = "brown")) +
+  labs(title = "Monthly Average Bike Rentals with Weather Events in 2011",
+       x = "Month", y = "Average Bike Rentals") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# Print the plot for 2011
+print(p1)
+```
+
+
+Looking at the year 2011 we can match exact dates to weather occurrences. On January 26, there is an all time low for the 26-27th for count of bike rentals, this is related to the rush hour snowstorm that occurs. There are 506 rentals and 431 respectively. In the month of July there was a heat wave and had the hottest days which explains why it has the month with highest rentals. Then in August there were hurricanes which impacted the rentals even though the weather was okay. 
+
 
 Now analyze the year 2012 alone to see if there were specific weather occurences
 ```{r}
 #get the year 2012 values alone
-day_2012 <- day %>% 
+day_2012 <- day %>%
   filter(year(date) == 2012)
-
-day$weather_situation <- factor(day$weather_situation, levels = c(1, 2, 3), labels = c("good", "okay", "bad"))
 
 average_rentals_by_weather_2012 <- day_2012 %>%
   group_by(weather_situation) %>%
@@ -74,6 +167,69 @@ ggplot(day_2012, aes(x = date, y = count, color = weather_situation)) +
   labs(x = "Date", y = "Number of Bike Rentals",
        title = "Daily Bike Rentals Over Time by Weather Situation in 2012")
 ```
+
+merge for 2012
+
+```{r}
+# Specific dates and labels for weather events in 2012
+weather_events_2012 <- data.frame(
+  date = c(mdy("June 1, 2012"), mdy("June 29, 2012"), mdy("October 29, 2012"), mdy("October 30, 2012")),
+  event = c("Tornado Outbreak", "Derecho", "Hurricane Sandy", "Hurricane Sandy")
+)
+
+# Merge the weather events with day_2012 to get the counts for those dates
+highlighted_data_2012 <- left_join(day_2012, weather_events_2012, by = "date")
+
+# Filter out the rows without events for use in geom_point
+events_data_2012 <- highlighted_data_2012 %>% filter(!is.na(event))
+
+# Create the plot for 2012
+p_2012 <- ggplot(day_2012, aes(x = date, y = count, group = weather_situation, color = weather_situation)) +
+  geom_line() +  # Line for daily data
+  geom_point(data = events_data_2012, aes(x = date, y = count, color = event), size = 3) +  # Colored points for events
+  scale_color_manual(values = c("good" = "green", "okay" = "orange", "bad" = "red", 
+                                "Tornado Outbreak" = "blue", "Derecho" = "cyan", 
+                                "Hurricane Sandy" = "chocolate")) +
+  labs(title = "Daily Bike Rentals and Weather Events in 2012", x = "Date", y = "Number of Bike Rentals") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(size = 20),
+        axis.title = element_text(size = 14),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Print the plot
+print(p_2012)
+
+# Calculate the monthly averages for 2012
+monthly_avg_2012 <- day_2012 %>%
+  group_by(month = floor_date(date, "month")) %>%
+  summarize(average_count = mean(count))
+
+# Match the weather events with the first day of the month to join with monthly averages
+weather_events_2012$month <- floor_date(weather_events_2012$date, "month")
+
+# Now, join the monthly average data with the weather events to get the average count for each event
+weather_events_avg_2012 <- left_join(weather_events_2012, monthly_avg_2012, by = "month")
+
+# Filter out rows with NA in average_count after joining
+weather_events_avg_2012 <- weather_events_avg_2012 %>% 
+  filter(!is.na(average_count))
+
+# Create the plot for 2012 with monthly averages and weather events
+p2 <- ggplot(monthly_avg_2011, aes(x = month, y = average_count)) +
+  geom_line(color = "blue", size = 1) +
+  geom_point(data = weather_events_avg_2011, aes(x = date, y = average_count, color = event), size = 2) +
+  scale_color_manual(values = c("Tornado Outbreak" = "blue", "Derecho" = "cyan", 
+                                "Hurricane Sandy" = "chocolate")) +
+  labs(title = "Monthly Average Bike Rentals with Weather Events in 2011",
+       x = "Month", y = "Average Bike Rentals") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+# Print the plot for 2012
+print(p2)
+```
+
 
 Upon analyzing the data in 2012, there are two low points that can be identified around June and October/November. When the bike shares were at all time lows at this point when the weather was bad, we searched for a reason for this. According to the top 5 weather incidents of 2012, there was hurricane Sandy in late October and also the June 29th Derecho where weather temperatures were at an all time high. The data points line up with the weather occurences and explain how weather can impact the number of bike rentals.
 
