@@ -84,22 +84,38 @@ data$dteday <- as.Date(data$dteday)
 
 # Define important event dates
 important_dates <- c(
-  "2011-04-16", "2011-04-17", "2011-07-04", "2011-09-24",
-  "2012-04-14", "2012-04-15", "2012-07-04", "2012-09-01",
-  "2012-11-23", "2012-12-25"
+  "2011-01-20",  # Presidential Inauguration of Barack Obama
+  "2011-04-09",  # Dedication of the Martin Luther King Jr. Memorial
+  "2011-06-30",  # End of the "Don't Ask, Don't Tell" policy
+  "2011-08-23",  # East Coast Earthquake
+  "2011-10-30",  # Dedication of the Franklin Delano Roosevelt Memorial
+  "2011-12-15",  # Last convoy of U.S. troops leaves Iraq
+  "2012-01-21",  # Second Presidential Inauguration of Barack Obama
+  "2012-05-20",  # Dedication of the Martin Luther King Jr. National Memorial Library
+  "2012-06-28",  # Supreme Court upholds the Affordable Care Act
+  "2012-08-06",   # International AIDS Conference
+  "2011-01-18",  # Martin Luther King Jr. Day
+  "2011-07-04",  # Independence Day Celebrations
+  "2011-09-24",  # National Book Festival
+  "2012-02-11",  # "Portraits of African American Heroes" exhibition at the Smithsonian
+  "2012-11-06",  # United States Presidential Election
+  "2011-05-01",  # Death of Osama bin Laden
+  "2011-09-11"   # 10th Anniversary of the September 11 Attacks
 )
 
 # Create binary variable indicating whether it's an important date
 data$is_important <- ifelse(data$dteday %in% as.Date(important_dates), 1, 0)
 
-# Define peak blossom dates
-peak_blossom_dates <- c("2011-03-29", "2012-03-20")
+# Define cherry blossom festival dates
+cherry_blossom_dates <- c(seq(from = as.Date("2011-03-26"), to = as.Date("2011-04-10"), by = "day"),
+                        seq(from = as.Date("2012-03-20"), to = as.Date("2012-04-27"), by = "day"))
+
 
 # Create binary variable indicating whether it's a peak blossom day
-data$is_peak_blossom <- ifelse(data$dteday %in% as.Date(peak_blossom_dates), 1, 0)
+data$is_cherry_blossom <- ifelse(data$dteday %in% as.Date(cherry_blossom_dates), 1, 0)
 
 # Create binary variable indicating whether it's both an important date and a peak blossom day
-data$is_important_and_peak <- ifelse(data$is_important == 1 & data$is_peak_blossom == 1, 1, 0)
+data$is_important_and_cherry <- ifelse(data$is_important == 1 & data$is_cherry_blossom == 1, 1, 0)
 
 # Print the updated dataset
 head(data)
@@ -132,8 +148,8 @@ formatted_combined_data <- formatted_combined_data %>%
          casual,
          registered,
          is_important,
-         is_peak_blossom,
-         is_important_and_peak) %>%
+         is_cherry_blossom,
+         is_important_and_cherry) %>%
   mutate(temp = round(temp * 100),
          hum = round(hum * 100),
          windspeed = round(windspeed * 100))
@@ -143,8 +159,8 @@ binary_to_yes_no <- function(x) {
 }
 
 # Modify the binary variables to Yes or No
-formatted_combined_data <- formatted_combined_data %>%
-  mutate_at(vars(is_important, is_peak_blossom, is_important_and_peak, holiday, workingday), binary_to_yes_no) %>%
+tableData <- formatted_combined_data %>%
+  mutate_at(vars(is_important, is_cherry_blossom, is_important_and_cherry, holiday, workingday), binary_to_yes_no) %>%
   rename(
     Date = dteday,
     Season = season,
@@ -158,8 +174,8 @@ formatted_combined_data <- formatted_combined_data %>%
     CasualUsers = casual,
     RegisteredUsers = registered,
     ImportantDate = is_important,
-    PeakBlossomDay = is_peak_blossom,
-    ImportantAndPeakBlossomDay = is_important_and_peak
+    CherryFestivalDay = is_cherry_blossom,
+    ImportantAndPeakBlossomDay = is_important_and_cherry
   )
 
 
@@ -167,8 +183,8 @@ formatted_combined_data <- formatted_combined_data %>%
 library(kableExtra)
 
 # Display the combined dataset with kable and color formatting
-kable(formatted_combined_data, caption = "Top 5 Days with Least and Most Casual Users", align = "c") %>%
+kable(tableData, caption = "Top 5 Days with Least and Most Casual Users", align = "c") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
   column_spec(7, color = "white",
-              background = spec_color(formatted_combined_data$Temperature[1:10], end = 0.7)) 
+              background = spec_color(tableData$Temperature[1:10], end = 0.7)) 
 
