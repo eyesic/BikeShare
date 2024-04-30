@@ -137,20 +137,19 @@ formatted_combined_data <- combined_data
 formatted_combined_data$dteday <- format(formatted_combined_data$dteday, "%Y-%m-%d")
 formatted_combined_data <- formatted_combined_data %>%
   select(dteday,
-         season,
-         mnth,
          weekday,
          holiday,
          workingday,
          temp,
+         atemp,
          hum,
          windspeed,
-         casual,
-         registered,
+         cnt,
          is_important,
          is_cherry_blossom,
          is_important_and_cherry) %>%
   mutate(temp = round(temp * 100),
+         atemp = round(atemp * 100),
          hum = round(hum * 100),
          windspeed = round(windspeed * 100))
 
@@ -163,21 +162,18 @@ tableData <- formatted_combined_data %>%
   mutate_at(vars(is_important, is_cherry_blossom, is_important_and_cherry, holiday, workingday), binary_to_yes_no) %>%
   rename(
     Date = dteday,
-    Season = season,
-    Month = mnth,
     DayOfWeek = weekday,
     Holiday = holiday,
     WorkingDay = workingday,
+    HeatIndex = atemp,
     Temperature = temp,
     Humidity = hum,
     WindSpeed = windspeed,
-    CasualUsers = casual,
-    RegisteredUsers = registered,
+    Users = cnt,
     ImportantDate = is_important,
     CherryFestivalDay = is_cherry_blossom,
     ImportantAndPeakBlossomDay = is_important_and_cherry
   )
-
 
 # Display the combined dataset with kable
 library(kableExtra)
@@ -185,6 +181,46 @@ library(kableExtra)
 # Display the combined dataset with kable and color formatting
 kable(tableData, caption = "Top 5 Days with Least and Most Casual Users", align = "c") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
-  column_spec(7, color = "white",
+  column_spec(5, color = "white",
               background = spec_color(tableData$Temperature[1:10], end = 0.7)) 
+
+
+ggplot(data, aes(x=atemp, y=cnt, color=as.factor(is_cherry_blossom))) +
+  geom_point() +  
+  theme_minimal() +
+  labs(x = "Heat Index (atemp)", y = "Total Users") +
+  scale_color_manual(values = c("lightblue", "red"), name = "Cherry Blossom", labels = c("Not Cherry Blossom", "Cherry Blossom"))
+
+p1 <- ggplot(day, aes(x = temp, y = casual + registered, color = temp)) +
+  geom_point() +
+  labs(x = "Temperature", y = "Total Users") +
+  scale_color_continuous(name = "Temperature")
+
+# Plot for Humidity
+p2 <- ggplot(day, aes(x = hum, y = casual + registered, color = hum)) +
+  geom_point() +
+  labs(x = "Humidity", y = "Total Users") +
+  scale_color_continuous(name = "Humidity")
+
+# Plot for WindSpeed
+p3 <- ggplot(day, aes(x = windspeed, y = casual + registered, color = windspeed)) +
+  geom_point() +
+  labs(x = "Wind Speed", y = "Total Users") +
+  scale_color_continuous(name = "Wind Speed", trans = "reverse")
+
+p4 <- ggplot(day, aes(x = atemp, y = casual + registered, color = atemp)) +
+  geom_point() +
+  labs(x = "Heat Index", y = "Total Users") +
+  scale_color_continuous(name = "Heat Index")
+
+p5 <- ggplot(day, aes(x = factor(weathersit), y = casual + registered, color = factor(weathersit))) +
+  geom_boxplot() +
+  labs(x = "Weather Situation", y = "Total Users") +
+  scale_color_discrete(name = "Weather Situation")
+
+# Combine plots into one picture
+combined_plot <- gridExtra::grid.arrange(p1, p2, p3, p4, p5, nrow = 2)
+
+# Display the combined plot
+print(combined_plot)
 
