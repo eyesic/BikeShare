@@ -11,6 +11,8 @@ library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
+library(gridExtra)
+library(randomForest)
 ```
 
 Importing datasets
@@ -30,7 +32,7 @@ Did any major weather events cause changes in the average bike rentals, and was 
 
 ```{r}
 #Changing levels for clarity
-day$weather_situation <- factor(day$weather_situation, levels = c(1, 2, 3), labels = c("good", "okay", "bad"))
+day$weather_situation <- factor(day$weather_situation, levels = c(1, 2, 3), labels = c("Clear", "Cloudy", "Rain"))
 
 #Find average based on weather situation first
 average_rentals_by_weather <- day %>%
@@ -73,7 +75,6 @@ ggplot(day_2011, aes(x = date, y = count, color = weather_situation)) +
   labs(x = "Date", y = "Number of Bike Rentals",
        title = "Daily Bike Rentals Over Time by Weather Situation in 2011")
 ```
-<<<<<<< HEAD
 Match specific dates
 
 ```{r}
@@ -117,25 +118,30 @@ monthly_avg_2011 <- day_2011 %>%
   group_by(month = floor_date(date, "month")) %>%
   summarize(average_count = mean(count))
 
-# Match the weather events with the first day of the month to join with monthly averages
-weather_events$month <- floor_date(weather_events$date, "month")
+# Define the specific weather events for 2011
+weather_events_2011 <- data.frame(
+  date = mdy(c("January 26, 2011", "September 4, 2011", "September 5, 2011", 
+               "September 6, 2011", "September 7, 2011", "September 8, 2011", 
+               "August 28, 2011", "April 27, 2011", "April 28, 2011")),
+  event = c("Snowstorm", "Tropical Storm Lee", "Tropical Storm Lee", 
+            "Tropical Storm Lee", "Tropical Storm Lee", "Tropical Storm Lee", 
+            "Hurricane Irene", "Tornado Outbreak", "Tornado Outbreak")
+)
 
-# Now, join the monthly average data with the weather events to get the average count for each event
-weather_events_avg_2011 <- left_join(weather_events, monthly_avg_2011, by = "month")
+# Merge weather events with day_2011 to get the count for those dates
+weather_data_2011 <- inner_join(weather_events_2011, day_2011, by = "date")
 
-# Filter out rows with NA in average_count after joining
-weather_events_avg_2011 <- weather_events_avg_2011 %>% 
-  filter(!is.na(average_count))
-
-# Create the plot for 2011 with monthly averages and weather events
+# Plot the monthly average line for 2011
 p1 <- ggplot(monthly_avg_2011, aes(x = month, y = average_count)) +
   geom_line(color = "blue", size = 1) +
-  geom_point(data = weather_events_avg_2011, aes(x = date, y = average_count, color = event), size = 2) +
-  scale_color_manual(values = c("Snowstorm" = "blue", "Tropical Storm Lee" = "purple",
-                                "Hurricane Irene" = "red", "Tornado Outbreak" = "brown")) +
   labs(title = "Monthly Average Bike Rentals with Weather Events in 2011",
        x = "Month", y = "Average Bike Rentals") +
-  theme_minimal() +
+  theme_minimal()
+
+# Overlay the actual counts for the weather event dates on the monthly average line for 2011
+p1 <- p1 + geom_point(data = weather_data_2011, aes(x = date, y = count, color = event), size = 3) +
+  scale_color_manual(values = c("Snowstorm" = "blue", "Tropical Storm Lee" = "purple",
+                                "Hurricane Irene" = "red", "Tornado Outbreak" = "brown")) +
   theme(legend.position = "bottom")
 
 # Print the plot for 2011
@@ -143,8 +149,6 @@ print(p1)
 ```
 
 
-=======
->>>>>>> main
 Looking at the year 2011 we can match exact dates to weather occurrences. On January 26, there is an all time low for the 26-27th for count of bike rentals, this is related to the rush hour snowstorm that occurs. There are 506 rentals and 431 respectively. In the month of July there was a heat wave and had the hottest days which explains why it has the month with highest rentals. Then in August there were hurricanes which impacted the rentals even though the weather was okay. 
 
 
@@ -203,38 +207,363 @@ p_2012 <- ggplot(day_2012, aes(x = date, y = count, group = weather_situation, c
 # Print the plot
 print(p_2012)
 
+# Filter out the 2012 data
+day_2012 <- day %>% 
+  filter(year(date) == 2012)
+
+# Define specific weather events for 2012
+weather_events_2012 <- data.frame(
+  date = mdy(c("June 1, 2012", "June 29, 2012", "October 29, 2012", "October 30, 2012")),
+  event = c("Tornado Outbreak", "Derecho", "Hurricane Sandy", "Hurricane Sandy")
+)
+
+# Merge weather events with day_2012 to get the count for those dates
+weather_data_2012 <- inner_join(weather_events_2012, day_2012, by = "date")
+
 # Calculate the monthly averages for 2012
 monthly_avg_2012 <- day_2012 %>%
   group_by(month = floor_date(date, "month")) %>%
   summarize(average_count = mean(count))
 
-# Match the weather events with the first day of the month to join with monthly averages
-weather_events_2012$month <- floor_date(weather_events_2012$date, "month")
-
-# Now, join the monthly average data with the weather events to get the average count for each event
-weather_events_avg_2012 <- left_join(weather_events_2012, monthly_avg_2012, by = "month")
-
-# Filter out rows with NA in average_count after joining
-weather_events_avg_2012 <- weather_events_avg_2012 %>% 
-  filter(!is.na(average_count))
-
-# Create the plot for 2012 with monthly averages and weather events
-p2 <- ggplot(monthly_avg_2011, aes(x = month, y = average_count)) +
+# Plot the monthly average line for 2012
+p2 <- ggplot(monthly_avg_2012, aes(x = month, y = average_count)) +
   geom_line(color = "blue", size = 1) +
-  geom_point(data = weather_events_avg_2011, aes(x = date, y = average_count, color = event), size = 2) +
-  scale_color_manual(values = c("Tornado Outbreak" = "blue", "Derecho" = "cyan", 
-                                "Hurricane Sandy" = "chocolate")) +
-  labs(title = "Monthly Average Bike Rentals with Weather Events in 2011",
+  labs(title = "Monthly Average Bike Rentals with Weather Events in 2012",
        x = "Month", y = "Average Bike Rentals") +
-  theme_minimal() +
+  theme_minimal()
+
+# Overlay the actual counts for the weather event dates on the monthly average line for 2012
+p2 <- p2 + geom_point(data = weather_data_2012, aes(x = date, y = count, color = event), size = 3) +
+  scale_color_manual(values = c("Tornado Outbreak" = "blue", "Derecho" = "orange",
+                                "Hurricane Sandy" = "red")) +
   theme(legend.position = "bottom")
 
 # Print the plot for 2012
 print(p2)
 ```
 
+Calculate standard deviations for 2011 and 2012
+
+```{r}
+# Calculate the mean count for each year's data
+mean_count_2011 <- mean(day_2011$count, na.rm = TRUE)
+mean_count_2012 <- mean(day_2012$count, na.rm = TRUE)
+
+# Assuming 'weather_events_2011' and 'weather_events_2012' contain the specific event dates and names for each year
+# Inner join is used to filter the day data to only include the dates where events occurred
+day_events_2011 <- inner_join(day_2011, weather_events_2011, by = "date")
+day_events_2012 <- inner_join(day_2012, weather_events_2012, by = "date")
+
+# Calculate deviation for each specific event point from the mean for 2011
+day_events_2011 <- day_events_2011 %>%
+  mutate(deviation_2011 = count - mean_count_2011)
+
+# Calculate deviation for each specific event point from the mean for 2012
+day_events_2012 <- day_events_2012 %>%
+  mutate(deviation_2012 = count - mean_count_2012)
+
+# Select relevant columns for deviation tables
+deviation_table_2011 <- day_events_2011 %>%
+  select(date, event, count, deviation_2011)
+
+deviation_table_2012 <- day_events_2012 %>%
+  select(date, event, count, deviation_2012)
+
+# Print the deviation tables for 2011 and 2012
+print(deviation_table_2011)
+print(deviation_table_2012)
+
+```
+
 
 Upon analyzing the data in 2012, there are two low points that can be identified around June and October/November. When the bike shares were at all time lows at this point when the weather was bad, we searched for a reason for this. According to the top 5 weather incidents of 2012, there was hurricane Sandy in late October and also the June 29th Derecho where weather temperatures were at an all time high. The data points line up with the weather occurences and explain how weather can impact the number of bike rentals.
+
+Modeling to predict rentals
+```{r}
+library(randomForest)
+library(caret)
+library(dplyr)
+library(tidyr)
+
+# Assuming `day` is your dataset and you have already preprocessed it
+
+# Split data into training and testing sets
+set.seed(123) # for reproducibility
+index <- createDataPartition(day$count, p = 0.8, list = FALSE)
+train_data <- day[index, ]
+test_data <- day[-index, ]
+
+# Random Forest model excluding 'registered' and 'casual'
+rf_model <- randomForest(count ~ . -serial, data = train_data, mtry = 3, ntree = 500)
+
+# Evaluate model performance
+rf_predictions <- predict(rf_model, test_data)
+rf_rmse <- RMSE(rf_predictions, test_data$count)
+rf_mae <- MAE(rf_predictions, test_data$count)
+
+print(rf_rmse)
+print(rf_mae)
+
+# Check variable importance
+importance(rf_model)
+
+# If you need to perform hyperparameter tuning
+control <- trainControl(method = "cv", number = 10)
+grid <- expand.grid(mtry = c(2, 3, 4))
+
+tuned_rf <- train(count ~ . -serial, data = train_data, method = "rf",
+                  tuneGrid = grid, trControl = control)
+                  
+# Check the results
+print(tuned_rf)
+
+
+```
+
+predict by splitting dates
+```{r}
+library(caret)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+
+# Assuming `day` is your dataset and it has a `date` column.
+
+# Convert date to Date class if not already
+day$date <- as.Date(day$date)
+
+# Sort the data by date just in case
+day <- day %>% arrange(date)
+
+# Split the data: for example, use the first 80% of the days for training, the rest for testing.
+# Find the split point.
+split_date <- day$date[round(nrow(day) * 0.8)]
+
+# Create the training and testing datasets.
+train_set <- day %>% filter(date <= split_date)
+test_set <- day %>% filter(date > split_date)
+
+# Now, train your model on the train_set
+# Let's say you're using a random forest model from the 'randomForest' package.
+library(randomForest)
+
+# Specify the model formula: count is the response variable, and the rest are predictors.
+# Exclude serial and date from the predictors as they are not informative for the model.
+model_formula <- as.formula("count ~ . - serial - date")
+
+# Train the model.
+rf_model <- randomForest(model_formula, data=train_set)
+
+# Make predictions on the test set.
+predictions <- predict(rf_model, test_set)
+
+# Evaluate the model's performance.
+# Calculate RMSE and R^2 as an example.
+rmse <- sqrt(mean((predictions - test_set$count)^2))
+rsquared <- cor(predictions, test_set$count)^2
+
+# Output the performance.
+cat("RMSE on the test set:", rmse, "\n")
+cat("R-squared on the test set:", rsquared, "\n")
+
+```
+
+Plotting variable importance:
+
+```{r}
+# Assuming 'rf_model' is the trained random forest model
+var_imp <- importance(rf_model)
+
+# Convert to data frame for plotting
+var_imp_df <- data.frame(
+  Variable = rownames(var_imp),
+  Importance = var_imp[, "IncNodePurity"]
+)
+
+# Plot variable importance using ggplot2
+ggplot(var_imp_df, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +  # Flip coordinates to make the plot horizontal
+  labs(x = "Variables", y = "Importance", title = "Variable Importance Plot") +
+  theme_minimal()
+
+
+```
+Partial Dependence plots 
+
+```{r}
+library(randomForest)
+library(ggplot2)
+library(pdp) # for partial dependence plots
+
+# Assuming 'rf_model' is your trained random forest model without the 'registered' and 'casual' variables
+# and 'train_set' is your training dataset.
+
+# List of weather-related variables to plot
+weather_variables <- c("temp", "atemp", "hum", "windspeed", "weather_situation")
+
+# Create empty list to store partial plots
+partial_plots_list <- list()
+
+# Loop over weather variables and create partial dependence plots
+for (variable in weather_variables) {
+  # Calculate partial dependence for the specific variable
+  pd <- partial(rf_model, pred.var = variable, train = train_set, grid.resolution = 50)
+  
+  # Convert to data frame for ggplot
+  pd_df <- as.data.frame(pd)
+  
+  # Create the plot
+  p <- ggplot(pd_df, aes_string(x = names(pd_df)[2], y = names(pd_df)[1])) +
+    geom_line() +
+    labs(title = paste("Partial Dependence Plot for", variable),
+         x = variable,
+         y = "Partial Dependence") +
+    theme_minimal()
+  
+  # Add the plot to the list
+  partial_plots_list[[variable]] <- p
+}
+
+# Display the plots for weather-related variables
+library(gridExtra)
+grid.arrange(grobs = partial_plots_list, ncol = 2)
+
+
+```
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(randomForest)
+library(caret)
+
+# Load your dataset
+day1 <- read_csv("day.csv")
+
+# Print the column names to ensure correct referencing
+print(colnames(day1))
+
+# Assuming day dataset has the following weather-related columns:
+# temp (temperature), atemp (feeling temperature), hum (humidity), windspeed
+# Weathersit column should be checked for correct name
+
+# If 'weathersit' is named differently, replace 'weathersit' in the code below with the correct column name
+
+# Convert weather situation into a factor with readable levels
+day1$weathersit <- factor(day1$weathersit, levels = c(1, 2, 3), labels = c("Clear", "Mist", "Light Rain/Snow"))
+
+# Create interaction terms
+day1$interaction_temp_hum <- day1$temp * day1$hum
+day1$interaction_temp_windspeed <- day1$temp * day1$windspeed
+
+# Exploratory Data Analysis (EDA)
+# Plotting relationships between weather variables and bike rentals
+p1 <- ggplot(day1, aes(x = temp, y = cnt)) + geom_point() + geom_smooth(method = "lm") +
+  labs(title = "Effect of Temperature on Bike Rentals", x = "Temperature", y = "Count of Rentals")
+p2 <- ggplot(day1, aes(x = hum, y = cnt)) + geom_point() + geom_smooth(method = "lm") +
+  labs(title = "Effect of Humidity on Bike Rentals", x = "Humidity", y = "Count of Rentals")
+p3 <- ggplot(day1, aes(x = windspeed, y = cnt)) + geom_point() + geom_smooth(method = "lm") +
+  labs(title = "Effect of Wind Speed on Bike Rentals", x = "Wind Speed", y = "Count of Rentals")
+p4 <- ggplot(day1, aes(x = weathersit, y = cnt)) + geom_boxplot() +
+  labs(title = "Effect of Weather Condition on Bike Rentals", x = "Weather Situation", y = "Count of Rentals")
+
+# Display plots
+grid.arrange(p1, p2, p3, p4, nrow = 2)
+
+# Build a Random Forest Model to quantify impact
+set.seed(123) # For reproducibility
+trainIndex <- createDataPartition(day1$cnt, p = 0.8, list = FALSE)
+trainData <- day1[trainIndex,]
+testData <- day1[-trainIndex,]
+
+model <- randomForest(cnt ~ temp + atemp + hum + windspeed + weathersit, data = trainData)
+print(model)
+
+# Evaluate model performance
+predictions <- predict(model, testData)
+result <- data.frame(Actual = testData$cnt, Predicted = predictions)
+cor(result$Actual, result$Predicted) # Checking correlation between actual and predicted values
+
+# Variable importance
+importance(model)
+
+# Further tuning and validation could be performed based on initial results
+
+```
+```{r}
+trainData <- trainData %>%
+  mutate(interaction_temp_hum = temp * hum,
+         interaction_temp_windspeed = temp * windspeed)
+
+# Rebuild the model including interactions
+model_with_interactions <- randomForest(
+  cnt ~ temp + atemp + hum + windspeed + weathersit + interaction_temp_hum + interaction_temp_windspeed,
+  data = trainData,
+  mtry = 3,
+  ntree = 500
+)
+print(model_with_interactions)
+
+# Grid Search for Random Forest hyperparameters
+tune_grid <- expand.grid(
+  mtry = c(2, 3, 4, 5)
+)
+
+control <- trainControl(method = "cv", number = 10)  # 10-fold cross-validation
+
+tuned_model <- train(
+  cnt ~ temp + atemp + hum + windspeed + weathersit + interaction_temp_hum + interaction_temp_windspeed,
+  data = trainData,
+  method = "rf",
+  tuneGrid = tune_grid,
+  trControl = control
+)
+
+# Display best model parameters and results
+print(tuned_model)
+print(tuned_model$bestTune)
+
+# Assuming 'holiday' and 'weekday' are available in your dataset
+model_extended <- randomForest(
+  cnt ~ temp + atemp + hum + windspeed + weathersit + weekday + holiday,
+  data = trainData,
+  mtry = tuned_model$bestTune$mtry,
+  ntree = 500
+)
+print(model_extended)
+
+# Using GBM
+library(gbm)
+set.seed(123)
+gbm_model <- gbm(
+  formula = cnt ~ temp + atemp + hum + windspeed + weathersit,
+  data = trainData,
+  distribution = "gaussian",
+  n.trees = 500,
+  interaction.depth = 3,
+  shrinkage = 0.01,
+  cv.folds = 5,
+  n.minobsinnode = 10
+)
+summary(gbm_model)
+
+# Neural Network
+library(nnet)
+set.seed(123)
+nn_model <- nnet(
+  cnt ~ temp + atemp + hum + windspeed + weathersit,
+  data = trainData,
+  size = 5,
+  linout = TRUE,
+  decay = 1e-4,
+  maxit = 500
+)
+print(nn_model)
+
+```
 
 
 This code chunk answers Further Researched Question #2:
@@ -267,47 +596,50 @@ cherry_blossoms
 day <- day %>%
   mutate(Year = year(date))
 
-#Perform an inner_join to merge day and cherry_blossoms data
+# Perform an inner_join to merge day and cherry_blossoms data
 merged_data <- inner_join(cherry_blossoms, day, by = "Year")
 
-#Filter date
+# Filter for festival dates
 festival_data <- merged_data %>%
   filter(date >= festival_start_date & date <= festival_end_date)
 
-#Select needed variables
-festival_bike_rentals <- festival_data %>%
-  select(festival_start_date, festival_end_date, date, count)
+# Select needed variables for casual rentals
+festival_casual_rentals <- festival_data %>%
+  select(festival_start_date, festival_end_date, date, casual)
 
-#Summarize bike rentals by festival
-total_bike_rentals_by_festival <- festival_bike_rentals %>%
+# Summarize casual bike rentals by festival
+total_casual_rentals_by_festival <- festival_casual_rentals %>%
   group_by(festival_start_date, festival_end_date) %>%
-  summarize(total_rentals = sum(count))
+  summarize(total_casual_rentals = sum(casual))
 
-total_bike_rentals_by_festival
+# Output total casual rentals by festival
+total_casual_rentals_by_festival
 
-#calculates the mean bike rentals during festivals from 2011-2012
-average_rentals_during_festivals <- merged_data %>%
+# Calculate the mean casual bike rentals during festivals from 2011-2012
+average_casual_rentals_during_festivals <- merged_data %>%
   filter(date >= festival_start_date & date <= festival_end_date) %>%
-  summarise(average_rentals_during_festival = mean(count, na.rm = TRUE))
+  summarise(average_casual_rentals_during_festival = mean(casual, na.rm = TRUE))
 
-average_rentals_during_festivals
+# Output average casual rentals during festivals
+average_casual_rentals_during_festivals
 
-#creates an identifier for the festival periods
+# Create an identifier for the festival periods
 cherry_blossoms <- cherry_blossoms %>%
   mutate(festival_id = row_number())
 
-#merge with day dataset to exclude the periods of festival
+# Merge with day dataset to exclude the periods of the festival
 day_with_festival <- day %>%
   left_join(cherry_blossoms, by = "Year") %>%
   mutate(is_festival = date >= festival_start_date & date <= festival_end_date,
          is_festival = ifelse(is.na(is_festival), FALSE, is_festival))
 
-#calculates the mean bike rentals excluding festival days from 2011-2012
-average_rentals_excluding_festival <- day_with_festival %>%
+# Calculate the mean casual bike rentals excluding festival days from 2011-2012
+average_casual_rentals_excluding_festival <- day_with_festival %>%
   filter(!is_festival) %>%
-  summarise(average_rentals_excluding_festival = mean(count, na.rm = TRUE))
+  summarise(average_casual_rentals_excluding_festival = mean(casual, na.rm = TRUE))
 
-average_rentals_excluding_festival
+# Output average casual rentals excluding festival days
+average_casual_rentals_excluding_festival
 
 ```
 
