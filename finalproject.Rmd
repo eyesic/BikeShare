@@ -563,6 +563,29 @@ nn_model <- nnet(
 )
 print(nn_model)
 
+library(ggplot2)
+library(dplyr)
+
+# Assuming 'importance_data' is your dataframe containing the variable importance
+importance_data <- data.frame(
+  Variable = c("atemp", "temp", "hum", "windspeed", "weathersit"),
+  Influence = c(38, 35, 15, 7, 2)  # example values
+)
+
+# Arrange the data in descending order and reset the factor levels
+importance_data <- importance_data %>%
+  arrange(desc(Influence)) %>%
+  mutate(Variable = factor(Variable, levels = Variable))
+
+
+# Create the bar graph
+ggplot(importance_data, aes(x = Variable, y = Influence, fill = Variable)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Relative Importance of Weather Conditions on Bike Rentals",
+       x = "Weather Condition Variables",
+       y = "Relative Influence") +
+  theme_minimal() 
+
 ```
 
 
@@ -604,24 +627,24 @@ festival_data <- merged_data %>%
   filter(date >= festival_start_date & date <= festival_end_date)
 
 # Select needed variables for casual rentals
-festival_casual_rentals <- festival_data %>%
-  select(festival_start_date, festival_end_date, date, casual)
+festival_rentals <- festival_data %>%
+  select(festival_start_date, festival_end_date, date, count)
 
 # Summarize casual bike rentals by festival
-total_casual_rentals_by_festival <- festival_casual_rentals %>%
+total_rentals_by_festival <- festival_rentals %>%
   group_by(festival_start_date, festival_end_date) %>%
-  summarize(total_casual_rentals = sum(casual))
+  summarize(total_rentals = sum(count))
 
 # Output total casual rentals by festival
-total_casual_rentals_by_festival
+total_rentals_by_festival
 
 # Calculate the mean casual bike rentals during festivals from 2011-2012
-average_casual_rentals_during_festivals <- merged_data %>%
+average_rentals_during_festivals <- merged_data %>%
   filter(date >= festival_start_date & date <= festival_end_date) %>%
-  summarise(average_casual_rentals_during_festival = mean(casual, na.rm = TRUE))
+  summarise(average_rentals_during_festival = mean(count, na.rm = TRUE))
 
 # Output average casual rentals during festivals
-average_casual_rentals_during_festivals
+average_rentals_during_festivals
 
 # Create an identifier for the festival periods
 cherry_blossoms <- cherry_blossoms %>%
@@ -634,12 +657,12 @@ day_with_festival <- day %>%
          is_festival = ifelse(is.na(is_festival), FALSE, is_festival))
 
 # Calculate the mean casual bike rentals excluding festival days from 2011-2012
-average_casual_rentals_excluding_festival <- day_with_festival %>%
+average_rentals_excluding_festival <- day_with_festival %>%
   filter(!is_festival) %>%
-  summarise(average_casual_rentals_excluding_festival = mean(casual, na.rm = TRUE))
+  summarise(average_rentals_excluding_festival = mean(count, na.rm = TRUE))
 
 # Output average casual rentals excluding festival days
-average_casual_rentals_excluding_festival
+average_rentals_excluding_festival
 
 ```
 
